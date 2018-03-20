@@ -51,11 +51,8 @@ def decode_midi_2(midi, resolution):
     bucket = emptyBucket.copy()
     time = 0
     counter = 0
-    totaltime = 0
     for message in midi:
         time += message.time
-        totaltime += message.time
-        if totaltime > 5: return np.array(decoding)
         if time > resolution:
             if np.sum(bucket) > 0:
                 bucket[2*NUM_NOTES + counter] = 1
@@ -90,7 +87,6 @@ def encode_midi_2(decoding, track, resolution):
     for row in decoding:
         timeShift = np.where(row[2*NUM_NOTES:] == 1)[0][0]+1
         offset += int(TICK_PER_SECOND*resolution) * timeShift
-        print offset
         for i in np.where(row[:2*NUM_NOTES] == 1)[0]:
             if i < NUM_NOTES:
                 track.append(mido.Message('note_on', note=i, velocity=DEFAULT_VELOCITY, time=offset))
@@ -98,7 +94,7 @@ def encode_midi_2(decoding, track, resolution):
                 track.append(mido.Message('note_on', note=i-NUM_NOTES, velocity=0, time=offset))
             offset = 0
 
-# 
+#
 # def decode_midi_3(midi, resolution):
 #     decoding = decode_midi_2(midi, resolution)
 #     newDecoding = []

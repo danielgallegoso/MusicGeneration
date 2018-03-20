@@ -3,11 +3,12 @@ from tensorflow.contrib import rnn
 import numpy as np
 from utils import generate_dataset_iterator, save_decoding
 import progressbar
+import pickle
 
 # Network Parameters
 num_input = 128*2 + 100
 timesteps = 100
-num_hidden = 50 # hidden layer num of features
+num_hidden = 512 # hidden layer num of features
 beta = .003
 epochs = 100
 threshold = .5
@@ -59,12 +60,13 @@ def initialize_nn():
 
     # Initialize the variables (i.e. assign their default value)
     init = tf.global_variables_initializer()
-    return init, train_op, X, Y, loss_op, prediction
+    saver = tf.train.Saver()
+    return init, train_op, X, Y, loss_op, prediction, saver
 
 
 
 def run_nn():
-    init, train_op, X, Y, loss_op, prediction = initialize_nn()
+    init, train_op, X, Y, loss_op, prediction, saver = initialize_nn()
     # Start training
     with tf.Session() as sess:
         # Run the initializer
@@ -76,6 +78,7 @@ def run_nn():
             step = 0
             for decoding in generate_dataset_iterator('dev'):
                 step += 1
+                if step > 30: break
                 bar.update(step)
                 for subset in range(decoding.shape[0] / timesteps):
                     subDecoding = decoding[subset * timesteps:]
@@ -103,6 +106,21 @@ def run_nn():
                     testError.append(float(loss[0]))
             testError = np.mean(testError)
             print 'Epoch {}: Dev Error = {}, Test Error = {}'.format(epoch, devError, testError)
+
+            # pickleDump = {
+            #     sess: sess,
+            #     loss_op: loss_op,
+            #     train_op: train_op,
+            #     X: X,
+            #     Y: Y,
+            #     init: init,
+            #     prediction: prediction
+            # }
+            # with open('model{}.p'.format(epoch), 'w') as f:
+                # pickle.dump(pickleDump,f)
+            saver.save(sess, 'models/model{}.ckpt'.format(epoch))
+
+
             fake = None
             for decoding in generate_dataset_iterator('dev'):
                 fake = decoding
@@ -111,6 +129,7 @@ def run_nn():
             for i in range(timesteps):
                 batch_x = np.array([np.copy(decoding)])
                 batch_y = np.array([np.concatenate([np.zeros((1,num_input)), decoding[1:]], axis=0)])
+                print batch_x.shape
                 pred = sess.run(prediction, feed_dict={X: batch_x, Y: batch_y})
                 newFrame = pred[0][-1]
                 # print newFrame
