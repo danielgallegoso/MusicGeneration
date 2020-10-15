@@ -8,7 +8,7 @@ import pickle
 # Network Parameters
 num_input = 128*2 + 100
 timesteps = 100
-num_hidden = 512 # hidden layer num of features
+num_hidden = 256 # hidden layer num of features
 beta = .003
 epochs = 100
 threshold = .5
@@ -78,7 +78,6 @@ def run_nn():
             step = 0
             for decoding in generate_dataset_iterator('dev'):
                 step += 1
-                if step > 30: break
                 bar.update(step)
                 for subset in range(decoding.shape[0] / timesteps):
                     subDecoding = decoding[subset * timesteps:]
@@ -129,7 +128,7 @@ def run_nn():
             for i in range(timesteps):
                 batch_x = np.array([np.copy(decoding)])
                 batch_y = np.array([np.concatenate([np.zeros((1,num_input)), decoding[1:]], axis=0)])
-                print batch_x.shape
+                # print batch_x.shape
                 pred = sess.run(prediction, feed_dict={X: batch_x, Y: batch_y})
                 newFrame = pred[0][-1]
                 # print newFrame
